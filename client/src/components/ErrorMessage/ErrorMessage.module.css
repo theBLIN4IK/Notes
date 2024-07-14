@@ -1,0 +1,9 @@
+.errorMessage {
+	position: absolute;
+	color: red;
+	text-align: center;
+	font-size: 14px;
+	width: 380px;
+	bottom: 82px;
+	/* background: red; */
+}
