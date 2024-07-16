@@ -6,10 +6,13 @@ import mailService from './mail-service.js';
 import tokenService from './token-service.js';
 import { ApiError } from '../exceptions/api-errors.js'
 
+
+
 class UserService {
   async registration(email, password) {
     const candidate = await UserModel.findOne({ email })
-    if (candidate) throw ApiError.BadRequest(`Пользователь ${email} уже существует`)
+    if (candidate) throw ApiError.BadRequest(`Пользователь уже существует`)
+
     const hashPassword = await bcrypt.hash(password, 10)
     const activationLink = uuidv4()
     const user = await UserModel.create({
@@ -24,6 +27,7 @@ class UserService {
       email,
       `${process.env.API_URL}/api/activate/${activationLink}`
     );
+
 
     const userDto = new UserDto(user);
     const tokens = tokenService.generateTokens({ ...userDto })

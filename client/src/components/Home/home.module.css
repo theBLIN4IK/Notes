@@ -67,14 +67,31 @@ h1{
     align-items: flex-start;
     flex-direction: column;
     gap: 40px;
-    width: 80%;
+    width: 100%;
     font-size: 20px;
     color: aliceblue;
 }
-h2{
-    font-family: "LXGW WenKai Mono TC", monospace;
-    font-size: 45px;
-    color: rgba(255, 255, 255, 0.657);
+
+.header-text {
+  font-family: "LXGW WenKai Mono TC", monospace;
+    font-size: 38px;
+    color: rgba(255, 255, 255, 0.657);  
+    transition: all 0.3s ease;
+}
+
+.header-text-light {
+  font-family: "LXGW WenKai Mono TC", monospace;
+    font-size: 38px;
+    color: rgb(255, 255, 255);  
+    transition: all 0.3s ease;
+}
+.error-text-light {
+  color: #ff0303;
+  transition: all 0.3s ease;
+}
+.header-text-green{
+  color: #00d100;
+    transition: all 0.3s ease;
 }
 .input{
     width: 100%;

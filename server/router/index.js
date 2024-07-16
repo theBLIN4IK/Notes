@@ -2,7 +2,6 @@ import { Router } from 'express'
 import userController from '../controllers/user-controller.js'
 import taskController from '../controllers/task-controller.js'
 import { body } from 'express-validator'
-//import { upload } from '../middlewares/multer.js'
 
 const router = Router()
 router.post(
@@ -25,12 +24,5 @@ router.get('/activate/:link', userController.activate)
 router.get('/refresh', userController.refresh)
 router.get('/getUser/:email', userController.getUserByEmail)
 router.get('/checkAuth', userController.checkAuth)
-
-// router.post(
-// 	'/setAvatar', 
-// 	upload.single('avatar'),
-// 	userController.setAvatar
-// )
-
 
 export default router

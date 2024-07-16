@@ -6,28 +6,31 @@ export const useUserStore = create((set) => ({
   email: '',
   id: '',
   isAuthenticated: false,
-  errorText: null,
 
   login: async (email, password) => {
     try {
-      const { data } = await axios.post(`${PREFIX}/login`, { email, password }, { withCredentials: true });
-
-      set({
-        email: data.user.email,
-        id: data.user.id,
-        isAuthenticated: true,
-      })
-
-      return data.accessToken
-    }  catch (err) {
-			if (err instanceof AxiosError) {
-				throw new Error(err.response?.data.message)
-			}
-		}
-  },
+    const { data } = await axios.post(`${PREFIX}/api/login`, { email, password }, { withCredentials: true });
+    
+    set({
+    email: data.user.email,
+    id: data.user.id,
+    isAuthenticated: true,
+    })
+    return data.accessToken
+    }
+    catch (err) {
+    if (err instanceof AxiosError) {
+    throw new Error(err.response?.data.message)
+    } else if (err.request) {
+    throw new Error('Нет ответа от сервера')
+    } else {
+    throw new Error('Ошибка соединения');
+    }
+    }
+    },
   register: async (email, password) => {
     try {
-    const { data } = await axios.post(`${PREFIX}/login`, {  email, password  }, { withCredentials: true }) 
+    const { data } = await axios.post(`${PREFIX}/api/registration`, {  email, password  }, { withCredentials: true }) 
     set({
       email: data.user.email,
       id: data.user.id,
@@ -38,9 +41,9 @@ export const useUserStore = create((set) => ({
     if (err instanceof AxiosError) {
     throw new Error(err.response?.data.message)
     } else if (err.request) {
-                    throw new Error('Нет ответа от сервера');
+                    throw new Error('Нет ответа от сервера')
                 } else {
-                    throw new Error('Ошибка соединения');
+                    throw new Error('Ошибка соединения')
                 }
     }
     },
@@ -48,7 +51,7 @@ export const useUserStore = create((set) => ({
 
   checkAuth: async () => {
     try {
-      const { data } = await axios.get(`${PREFIX}/checkAuth`, { withCredentials: true });
+      const { data } = await axios.get(`${PREFIX}/api/checkAuth`, { withCredentials: true });
 
       set({
         email: data.user.email,

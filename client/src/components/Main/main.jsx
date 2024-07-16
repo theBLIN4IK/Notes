@@ -5,9 +5,11 @@ import React, { useState, useEffect } from 'react'
 import { useUserStore } from '../../../store/userStore'
 import axios from 'axios'
 import { useTasksStore } from '../../../store/tasksStore'
-import logo1 from '../../assets/no-task-logo.png'
+import { Navigate, useNavigate } from'react-router-dom';
+
 
 function Main() {
+  const navigate = useNavigate()
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [isTaskPanelOpen, setIsTaskPanelOpen] = useState(false);
   const [user, setUser] = useState({});
@@ -15,6 +17,8 @@ function Main() {
   const [selectedTask, setSelectedTask] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editedTaskText, setEditedTaskText] = useState('');
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState('');
 //  userStore
   const email = useUserStore((state) => state.email)
   const id = useUserStore((state) => state.id)
@@ -36,13 +40,29 @@ function Main() {
     setIsEditing(false);
     toggleTaskPanel();
   };
-//получить юзера/задачи
+  const handleKeyDown = (event) => {
+    if (event.key === 'Enter') {
+      handleAddTask()
+    }
+  }
+  const handleEditTask = () => {
+    setEditedTaskText(selectedTask.text)
+    setIsEditing(true)
+  };
+  const startEditingName = () => {
+    setEditedName(user.name);
+    setIsEditingName(true);
+  };
+  const handleTaskClick = (taskText) => {
+    setSelectedTask(taskText)
+  }
+
   useEffect(() => {
     async function fetchUserData() {
       try {
-        const response = await axios.get(`http://localhost:3000/getUser/${email}`)
+        const response = await axios.get(`http://localhost:3000/api/getUser/${email}`)
         setUser(response.data);
-        const tasksResponse = await axios.get(`http://localhost:3000/tasks/${response.data._id}`)
+        const tasksResponse = await axios.get(`http://localhost:3000/api/tasks/${response.data._id}`)
         getTasks(tasksResponse.data) 
       } catch (error) {
         console.log('you have no tasks')
@@ -52,17 +72,10 @@ function Main() {
       fetchUserData()
     }
   }, [email, id, addTaskToStore])
-//добавить задачу
-const handleKeyDown = (event) => {
-  if (event.key === 'Enter') {
-    handleAddTask()
-  }
-}
-
 const handleAddTask = async () => {
   if (!task) return;
   try {
-    const response = await axios.post('http://localhost:3000/postTask', {
+    const response = await axios.post('http://localhost:3000/api/postTask', {
       userId: user._id,
       task,
     });
@@ -76,13 +89,11 @@ const handleAddTask = async () => {
   } catch (error) {
     console.error('Error adding task:', error);
   }
-};
-
-//удалть задачу
+}
   const handleDeleteTask = async () => {
     try {
       const taskId = selectedTask._id
-      const response = await axios.delete(`http://localhost:3000/deleteTask/${taskId}`)
+      const response = await axios.delete(`http://localhost:3000/api/deleteTask/${taskId}`)
       deleteTaskFromStore(selectedTask);
       setSelectedTask('')
     } catch (error) {
@@ -90,19 +101,13 @@ const handleAddTask = async () => {
       console.log(error)
     }
   }
-//изменить задачу
-  const handleEditTask = () => {
-    setEditedTaskText(selectedTask.text)
-    setIsEditing(true)
-  };
-
   const handleSaveTask = async () => {
     if (editedTaskText.trim().length < 1) {
       return
     }
     try {
       const taskId = selectedTask._id
-      const response = await axios.put(`http://localhost:3000/updateTask/${taskId}`, {
+      const response = await axios.put(`http://localhost:3000/api/updateTask/${taskId}`, {
         userId: user._id,
         text: editedTaskText
       })
@@ -113,21 +118,12 @@ const handleAddTask = async () => {
       console.error('Error updating task:', error)
     }
   }
-
-  const [isEditingName, setIsEditingName] = useState(false);
-  const [editedName, setEditedName] = useState('');
-
-  const startEditingName = () => {
-    setEditedName(user.name);
-    setIsEditingName(true);
-  };
-  
   const handleSaveName = async () => {
     if (editedName.trim().length < 1) {
       return;
     }
     try {
-      const response = await axios.put(`http://localhost:3000/updateUser/${user._id}`, {
+      const response = await axios.put(`http://localhost:3000/api/updateUser/${user._id}`, {
         name: editedName
       });
       setUser((prev) => ({...prev, name: editedName }))
@@ -136,27 +132,21 @@ const handleAddTask = async () => {
       console.error('Error updating user:', error)
     }
   }
-
   const handleLogout = async () => {
     try {
-      const response = await axios.get('http://localhost:3000/logout', { withCredentials: true })
+      const response = await axios.get('http://localhost:3000/api/logout', { withCredentials: true })
       setIsPanelOpen(false)
-      window.location.href = '/'
+      navigate('/')
     } 
     catch (error) {
       console.error('Error logging out:', error)
     }
   }
-
-  const handleTaskClick = (taskText) => {
-    setSelectedTask(taskText)
-  }
-
   const handleAvaChange = async (event) => {
    const ava = prompt('Введите ссылку на изображение')
    if (!ava) return
    try {
-      const response = await axios.put(`http://localhost:3000/updateUser2/${user._id}`, {
+      const response = await axios.put(`http://localhost:3000/api/updateUser2/${user._id}`, {
         ava
       })
       setUser((prev) => ({...prev, ava }));
@@ -164,18 +154,16 @@ const handleAddTask = async () => {
       console.error('Error updating user:', error);
     }
   }
-
   const groupTasksByDate = (tasks) => {
     return tasks.reduce((acc, task) => {
-      const date = format(parseISO(task.createdAt), 'd MMMM yyyy', { locale: ru });
+      const date = format(parseISO(task.createdAt), 'd MMMM yyyy', { locale: ru })
       if (!acc[date]) {
-        acc[date] = [];
+        acc[date] = []
       }
-      acc[date].push(task);
-      return acc;
-    }, {});
-  };
-  
+      acc[date].push(task)
+      return acc
+    }, {})
+  }
   const groupedTasks = groupTasksByDate(tasks)
 
   return (

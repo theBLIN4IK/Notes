@@ -3,39 +3,37 @@ import cors from 'cors'
 import 'dotenv/config'
 import express from 'express'
 import mongoose from 'mongoose'
+import errorMiddleware from './middlewares/error-middleware.js'
 import router from './router/index.js'
-
-// сделано при поддержке MerlinAI!
 
 const PORT = process.env.PORT || 3000
 const MONGO_URL = process.env.MONGO_URL
 
 const app = express()
 
-app.use(cors({
-  origin: 'http://localhost:5173',
-  credentials: true 
-}));
-
+app.use('/uploads', express.static('uploads'))
 app.use(express.json())
+app.use(express.urlencoded({ extended: true }))
+
+app.use(cors({
+    origin: 'http://localhost:5173', 
+    credentials: true 
+}));
 app.use(cookieParser())
-app.use(router)
 app.use('/api', router)
+app.use(errorMiddleware)
 
+app.get('/', async (req, res) => {
+    res.send(`Hello`);
+});
 
+const start = async () => {
+    try {
+        await mongoose.connect(MONGO_URL)
+        app.listen(PORT, () => console.log(`server started on port: ${PORT}`))
+    } catch (err) {
+        console.log(err)
+    }
+}
 
-app.use((req, res, next) => {
-	console.log(req.path) // debug log
-	next()
-  })
-
-
-  mongoose.connect(process.env.MONGO_URL)
-
-  async function start() {
-	  app.listen(PORT, () => {
-		  console.log(`Server started! Port ${PORT}`)
-	  })
-  }
-  
-  start()
+start()

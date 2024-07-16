@@ -1,69 +1,81 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
 import styles from './home.module.css';
-import { useNavigate } from 'react-router-dom';
 import { useUserStore } from '../../../store/userStore'; 
-
+import { Navigate, useNavigate } from'react-router-dom';
 
 
 
 function Home() {
   const [email, setEmail] = useState('');
+  const navigate = useNavigate()
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [verifyEmail, setVerifyEmail] = useState('');
   const [errorEmail, setErrorEmail] = useState('');
   const [verifyPass, setVerifyPass] = useState('');
   const [errorPass, setErrorPass] = useState('');
-  const navigate = useNavigate();
-  const errorText = useUserStore(state => state.errorText)
-
 
 const register = useUserStore(state => state.register)
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
-      const response = await axios.post('http://localhost:3000/registration', { email, password})
-      register(email, password)
+     await register(email, password)
+     setTimeout(() => {
       setHeaderText('Проверьте почту')
+      setHeaderTextColor(styles['header-text-green'])
+      setTimeout(() => {
+        setHeaderTextColor('')
+      }, 1000)
+    }, 10)
     } catch (error) {
-      setHeaderText('Произошла ошибка')
-      console.log(error)
+      setHeaderTextColor(styles['error-text-light'])
+      setTimeout(() => {
+        setHeaderText(error.message)
+        setHeaderTextColor('')
+      }, 600);
     }
-  }
+  };
    const login = useUserStore(state => state.login)
    const handleLogin = async (e) => {
-    e.preventDefault();
+    e.preventDefault()
     try {
-      const response = await axios.post('http://localhost:3000/login', { email, password });
-      login(email, password);
-      if (response.data.redirectTo) {
-        setTimeout(() => {
-          navigate(response.data.redirectTo);
-        }, 1500);
-      }
+       await login(email, password)
+       navigate('/main')
     } catch (error) {
-      setHeaderText2('Неверный логин/пароль')
-      console.log(error);
+      setHeaderTextColor(styles['error-text-light'])
+      setTimeout(() => {
+        setHeaderText2(error.message)
+        setHeaderTextColor('')
+      }, 600);
     }
-  }
+  };
   
 
 
   const [showForm1, setShowForm1] = useState(true)
   const [showForm2, setShowForm2] = useState(false)
+  const [headerTextColor, setHeaderTextColor] = useState('')
 
   const toggleForm1 = () => {
-    setShowForm1(true)
-    setShowForm2(false)
-  };
+    setShowForm1(true);
+    setShowForm2(false);
+    setHeaderTextColor(styles['header-text-light'])
+    setTimeout(() => {
+      setHeaderTextColor('')
+    }, 1000)
+  }
 
   const toggleForm2 = () => {
-    setShowForm1(false)
-    setShowForm2(true)
+    setShowForm1(false);
+    setShowForm2(true);
+    setHeaderTextColor(styles['header-text-light'])
+    setTimeout(() => {
+      setHeaderTextColor('')
+    }, 1000)
   };
   const [headerText, setHeaderText] = useState('Регистрация')
   const [headerText2, setHeaderText2] = useState('Вход')
+
 
  
   useEffect(() => {
@@ -109,7 +121,7 @@ const register = useUserStore(state => state.register)
       <div className={styles['form-cont']}>
         {showForm1 && (
           <div className={styles['right']}>
-           <h2>{headerText}</h2>
+            <h2 className={`${styles['header-text']} ${headerTextColor}`}>{headerText}</h2>
             <form className={styles['form']} onSubmit={handleSubmit}>
               <div className={styles['email-field']}>
               <input
@@ -151,7 +163,7 @@ const register = useUserStore(state => state.register)
         )}
         {showForm2 && (
           <div className={styles['right']}>
-            <h2>{headerText2}</h2>
+             <h2 className={`${styles['header-text']} ${headerTextColor}`}>{headerText2}</h2>
             <form className={styles['form']} onSubmit={handleLogin}>
             <div className={styles['email-field']}>
             <input 

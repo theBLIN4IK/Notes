@@ -1,10 +1,9 @@
 import 'dotenv/config';
+import validator from 'validator';
 import userService from '../services/user-service.js';
 import { validationResult } from 'express-validator'
 import { UserModel } from '../models/user-model.js';
 import { Task } from '../models/tasks-model.js';
-import multer from 'multer';
-import path from 'path';
 import { ApiError } from '../exceptions/api-errors.js'
 
 class UserController {
@@ -35,14 +34,15 @@ class UserController {
   async login(req, res, next) {
     try {
       const { email, password } = req.body;
-      const userData = await userService.login(email, password);
+      const userData = await userService.login(email, password)
       res.cookie('refreshToken', userData.refreshToken, {
         maxAge: 30 * 24 * 60 * 60 * 1000,
         httpOnly: true,
-      });
-      return res.json({ ...userData, redirectTo: '/main' });
+      })
+      return res.json({ ...userData})
+	 
     } catch (err) {
-      next(err);
+      next(err)
     }
   }
 
@@ -71,123 +71,85 @@ class UserController {
 		}
 	}
 
-	async getUserByEmail (req, res) {
+	async getUserByEmail(req, res, next) {
 		try {
-		  const { email } = req.params
-		  const user = await UserModel.findOne({ email })
+		  const { email } = req.params;
+		  const user = await UserModel.findOne({ email });
 		  if (!user) {
-			return res.status(404).json({ message: 'User not found' })
+			return next(ApiError.BadRequest('Пользователь не найден'));
 		  }
-		  res.json(user)
+		  res.json(user);
 		} catch (error) {
-		  res.status(500).json({ message: error.message })
+		  next(ApiError.Internal(error.message));
 		}
 	  }
-	//   async setAvatar(req, res, next) {
-	// 	try {
-	// 		const { file, cookies } = req
-	// 		const errors = validationResult(req)
 	
-	// 		if (!file) {
-	// 			return next(new Error('Не передан файл'))
-	// 		}
-	
-	// 		if (!errors.isEmpty()) {
-	// 			await deleteFileOnError(req, res, next)
-	// 			const error = new Error('Некорректные данные')
-	// 			error.details = errors.array()
-	// 			return next(error)
-	// 		}
-	
-	// 		const { refreshToken } = cookies
-	
-	// 		if (!refreshToken) {
-	// 			throw new Error('Отсутствует токен обновления')
-	// 		}
-	
-	// 		await deletePreviousFile(req, res, next)
-	// 		const avatar = await userService.setAvatar(refreshToken, file.path)
-	
-	// 		return res.json(avatar)
-	// 	} catch (err) {
-	// 		next(err)
-	// 	}
-	// }
-
-	async updateUser(req, res, next) {
+	  async updateUser(req, res, next) {
 		try {
-		  const userId = req.params.id
-		  const { name } = req.body
-	  
+		  const userId = req.params.id;
+		  const { name } = req.body;
 		  if (!name) {
-			return res.status(400).json({ message: 'Имя не может быть пустым' })
+			return next(ApiError.BadRequest('Имя не может быть пустым'));
 		  }
-	  
-		  const user = await UserModel.findByIdAndUpdate(userId, { name }, { new: true })
-	  
+		  const existingUser = await UserModel.findOne({ name, _id: { $ne: userId } });
+		  if (existingUser) {
+			return next(ApiError.BadRequest('Пользователь с таким именем уже существует'));
+		  }
+		  const user = await UserModel.findByIdAndUpdate(userId, { name }, { new: true });
 		  if (!user) {
-			return res.status(404).json({ message: 'Пользователь не найден' })
+			return next(ApiError.NotFound('Пользователь не найден'));
 		  }
-	  
-		  res.json({ message: 'Ник успешно обновлен', user })
+		  res.json({ message: 'Ник успешно обновлен', user });
 		} catch (error) {
-		  console.error('Error updating user:', error)
-		  next(error)
+		  console.error('Error updating user:', error);
+		  next(ApiError.Internal(error.message));
 		}
 	  }
+	
 	  async updateUser2(req, res, next) {
 		try {
 		  const userId = req.params.id
 		  const { ava } = req.body
-
 		  if (!ava) {
-			return res.status(400).json({ message: 'Имя не может быть пустым' })
+			return next(ApiError.BadRequest('Ссылка на аватар не может быть пустой'))
 		  }
-
+		  if (!validator.isURL(ava)) {
+			return next(ApiError.BadRequest('Ссылка на аватар должна быть URL'))
+		  }
 		  const user = await UserModel.findByIdAndUpdate(userId, { ava }, { new: true })
-
 		  if (!user) {
-			return res.status(404).json({ message: 'Пользователь не найден' })
+			return next(ApiError.NotFound('Пользователь не найден'))
 		  }
-
-		  res.json({ message: 'ава успешно обновлен', user })
+		  res.json({ message: 'Аватар успешно обновлен', user })
 		} catch (error) {
 		  console.error('Error updating user:', error)
-		  next(error)
+		  next(ApiError.Internal(error.message))
 		}
 	  }
-
+	
 	  async logout(req, res, next) {
 		try {
 		  const { refreshToken } = req.cookies;
 		  if (!refreshToken) {
-			throw new Error('controller - cookie - no token');
+			return next(ApiError.BadRequest('Нет токена'));
 		  }
 		  const token = await userService.logout(refreshToken);
-	  
 		  res.clearCookie('refreshToken');
 		  return res.status(200).json(token);
 		} catch (err) {
-		  next(err);
+		  next(ApiError.Internal(err.message));
 		}
 	  }
-	  
 	
-	  
 	  async checkAuth(req, res, next) {
 		try {
-			const { refreshToken } = req.cookies
-			const userData = await userService.checkAuth(refreshToken)
-			return res.json(userData)
+		  const { refreshToken } = req.cookies;
+		  const userData = await userService.checkAuth(refreshToken);
+		  return res.json(userData);
 		} catch (err) {
-			next(err)
+		  next(ApiError.Internal(err.message));
 		}
+	  }
 	}
-
-}
-
-
-
-
-export default new UserController()
-
+	
+	export default new UserController();
