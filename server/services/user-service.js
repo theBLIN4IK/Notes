@@ -5,6 +5,7 @@ import { UserModel } from '../models/user-model.js';
 import mailService from './mail-service.js';
 import tokenService from './token-service.js';
 import { ApiError } from '../exceptions/api-errors.js'
+import fs from 'fs'
 
 
 
@@ -17,7 +18,7 @@ class UserService {
     const activationLink = uuidv4()
     const user = await UserModel.create({
 	  name: `user${Math.floor(Math.random() * 900000) + 100000}`,
-	  ava: 'https://cdn-icons-png.flaticon.com/512/149/149071.png',
+	  avatar: 'https://cdn-icons-png.flaticon.com/512/149/149071.png',
       email,
       password: hashPassword,
       activationLink
@@ -74,10 +75,31 @@ class UserService {
 		const token = await tokenService.removeToken(refreshToken)
 		return token
 	}
+	async setAvatar(refreshToken, avatarPath) {
+		if (!refreshToken) throw ApiError.UnauthorizedError();
+		const userData = await tokenService.validateRefreshToken(refreshToken)
+		const user = await UserModel.findOne({ email: userData.email })
+		if (!userData || !user) throw ApiError.UnauthorizedError()
+		if (user.avatar && fs.existsSync(user.avatar)) {
+		  fs.unlink(user.avatar, (err) => {
+			if (err) {
+			  ApiError.BadRequest('Ошибка при удалении файла');
+			} else {
+			  console.log('Файл успешно удален')
+			}
+		  });
+		}
+	  
+		user.avatar = avatarPath
+		await user.save()
+		return { user: avatarPath }
+	  }
+
+	
 
 	async checkAuth(refreshToken) {
 		if (!refreshToken) {
-		  return { user: null };
+		  return { user: null }
 		}
 		try {
 		  const userData = await tokenService.validateRefreshToken(refreshToken)

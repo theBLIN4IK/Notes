@@ -47,6 +47,27 @@ export const useUserStore = create((set) => ({
                 }
     }
     },
+
+    setAvatar: async (avatar) => {
+      try {
+        const { data } = await axios.post(`${PREFIX}/api/setAvatar`, avatar, { 
+          headers: { 'Content-Type': 'multipart/form-data' },
+          withCredentials: true 
+        })
+        set({
+          userAvatar: `${PREFIX}/${data.user}`
+        })
+      } catch (err) {
+        if (err instanceof AxiosError) {
+          throw new Error(err.response?.data.message)
+        } else if (err.request) {
+                  throw new Error('Нет ответа от сервера');
+              } else {
+                  throw new Error('Ошибка соединения');
+              }
+      }
+    },
+  
     
 
   checkAuth: async () => {

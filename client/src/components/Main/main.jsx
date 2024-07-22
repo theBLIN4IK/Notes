@@ -1,7 +1,7 @@
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, set } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import styles from './main.module.css'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useUserStore } from '../../../store/userStore'
 import axios from 'axios'
 import { useTasksStore } from '../../../store/tasksStore'
@@ -19,9 +19,13 @@ function Main() {
   const [editedTaskText, setEditedTaskText] = useState('');
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState('');
+  const [fileName, setFileName] = useState('Выбрать фото');
+  const fileInputRef = useRef(null);
+  const fileRef = useRef(null);
 //  userStore
   const email = useUserStore((state) => state.email)
   const id = useUserStore((state) => state.id)
+
 // taskStore
   const tasks = useTasksStore((state) => state.tasks)
   const addTaskToStore = useTasksStore((state) => state.addTaskToStore)
@@ -56,6 +60,9 @@ function Main() {
   const handleTaskClick = (taskText) => {
     setSelectedTask(taskText)
   }
+  const [headerText, setHeaderText] = useState('Мой To-Doo-List')
+  const [headerText2, setHeaderText2] = useState('Задача:')
+  const [headerText3, setHeaderText3] = useState('Профиль')
 
   useEffect(() => {
     async function fetchUserData() {
@@ -65,7 +72,7 @@ function Main() {
         const tasksResponse = await axios.get(`http://localhost:3000/api/tasks/${response.data._id}`)
         getTasks(tasksResponse.data) 
       } catch (error) {
-        console.log('you have no tasks')
+        setHeaderText('Ошибка получения задач')
       }
     }
     if (email) {
@@ -88,6 +95,8 @@ const handleAddTask = async () => {
     setTask('');
   } catch (error) {
     console.error('Error adding task:', error);
+    setHeaderText('Ошибка добавления задачи');
+
   }
 }
   const handleDeleteTask = async () => {
@@ -99,6 +108,7 @@ const handleAddTask = async () => {
     } catch (error) {
       console.error('Error deleting task:', error)
       console.log(error)
+      setHeaderText2('Ошибка удаления')
     }
   }
   const handleSaveTask = async () => {
@@ -116,11 +126,12 @@ const handleAddTask = async () => {
       setIsEditing(false)
     } catch (error) {
       console.error('Error updating task:', error)
+      setHeaderText2('Ошибка обновления')
     }
   }
   const handleSaveName = async () => {
     if (editedName.trim().length < 1) {
-      return;
+      setHeaderText3('имя короткое')
     }
     try {
       const response = await axios.put(`http://localhost:3000/api/updateUser/${user._id}`, {
@@ -129,7 +140,10 @@ const handleAddTask = async () => {
       setUser((prev) => ({...prev, name: editedName }))
       setIsEditingName(false)
     } catch (error) {
-      console.error('Error updating user:', error)
+      console.error(error.response.data.message)
+      setHeaderText3(error.response.data.message)
+      
+
     }
   }
   const handleLogout = async () => {
@@ -139,19 +153,8 @@ const handleAddTask = async () => {
       navigate('/')
     } 
     catch (error) {
-      console.error('Error logging out:', error)
-    }
-  }
-  const handleAvaChange = async (event) => {
-   const ava = prompt('Введите ссылку на изображение')
-   if (!ava) return
-   try {
-      const response = await axios.put(`http://localhost:3000/api/updateUser2/${user._id}`, {
-        ava
-      })
-      setUser((prev) => ({...prev, ava }));
-    } catch (error) {
-      console.error('Error updating user:', error);
+      console.error(error.response.data.message)
+      setHeaderText3(error.response.data.message)
     }
   }
   const groupTasksByDate = (tasks) => {
@@ -165,6 +168,39 @@ const handleAddTask = async () => {
     }, {})
   }
   const groupedTasks = groupTasksByDate(tasks)
+  const { userAvatar, setAvatar } = useUserStore()
+  const [previewAvatar, setPreviewAvatar] = useState(null)
+  const handleFileInputChange = (e) => {
+    const files = e.target.files
+    if (files.length > 0) {
+      const file = files[0]
+      if (
+        file.type === 'image/png' ||
+        file.type === 'image/jpeg' ||
+        file.type === 'image/jpg' ||
+        file.type === 'image/gif' ||
+        file.type === 'image/webp'
+      ) {
+        setFileName(file.name)
+        fileInputRef.current = file
+        setPreviewAvatar(URL.createObjectURL(file))
+      }
+    }
+  }
+
+  useEffect(() => {
+    if (fileInputRef.current) {
+      const formData = new FormData()
+      formData.append('avatar', fileInputRef.current)
+      setAvatar(formData)
+       
+        .catch((error) => {
+          console.error('Error uploading avatar:', error)
+        })
+    }
+  }, [fileInputRef.current, setAvatar])
+
+
 
   return (
        <div className={styles['container']}>
@@ -175,9 +211,10 @@ const handleAddTask = async () => {
       </div>
       <div className={styles['panel-content']}>
         <div className={styles['panel-top-cont']}>
-          <h5>Профиль</h5>
+          <h5>{headerText3}</h5>
+          
           <div className={styles['cont1']}>
-            <img src={user.ava} className={styles['ava']} />
+          <img src={previewAvatar || `http://localhost:3000/${user.avatar}`} className={styles['ava']} />
             <div className={styles['cont2']}>
               {isEditingName ? (
                 <textarea 
@@ -187,7 +224,7 @@ const handleAddTask = async () => {
                   className={`${styles['textarea']} ${editedName.length >= 14 ? styles['textarea-long'] : ''}`}
                 />
               ) : (
-                <p className={styles['name']} onClick={startEditingName}>{user.name}</p>
+                <p className={styles['name']}>{user.name}</p>
               )}
               <p className={styles['email']}>{user.email}</p>
             </div>
@@ -199,7 +236,9 @@ const handleAddTask = async () => {
             <li className={styles['item']} onClick={isEditingName ? handleSaveName : startEditingName}>
               {isEditingName ? 'Сохранить' : 'Изменить ник'}
             </li>
-            <li className={styles['item']} onClick={handleAvaChange}>Изменить аватар</li>
+            <li className={styles['item']}> Изменить аватар
+              <input type="file" onChange={handleFileInputChange} className={styles['kdkdkd']} ref={fileRef} />
+              </li>
             <li className={styles['item']} onClick={handleLogout}>Выйти</li>
           </ul>
         </div>
@@ -208,7 +247,7 @@ const handleAddTask = async () => {
         {/* внутрянка сайта */}
     <div className={styles['container2']}>
     <div className={styles['tasks']}>
-  <div className={styles['task-title']}>Мой To-Doo-List</div>
+  <div className={styles['task-title']}>{headerText}</div>
   <div className={styles['task-add']}>
     <input
       value={task}

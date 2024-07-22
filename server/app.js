@@ -23,9 +23,7 @@ app.use(cookieParser())
 app.use('/api', router)
 app.use(errorMiddleware)
 
-app.get('/', async (req, res) => {
-    res.send(`Hello`);
-});
+
 
 const start = async () => {
     try {

@@ -5,6 +5,7 @@ import { validationResult } from 'express-validator'
 import { UserModel } from '../models/user-model.js';
 import { Task } from '../models/tasks-model.js';
 import { ApiError } from '../exceptions/api-errors.js'
+import { deleteFileOnError } from '../middlewares/multer-middleware.js'
 
 class UserController {
   async registration(req, res, next) {
@@ -89,11 +90,11 @@ class UserController {
 		  const userId = req.params.id;
 		  const { name } = req.body;
 		  if (!name) {
-			return next(ApiError.BadRequest('Имя не может быть пустым'));
+			return next(ApiError.BadRequest('Имя короткое'));
 		  }
 		  const existingUser = await UserModel.findOne({ name, _id: { $ne: userId } });
 		  if (existingUser) {
-			return next(ApiError.BadRequest('Пользователь с таким именем уже существует'));
+			return next(ApiError.BadRequest('Имя занято'));
 		  }
 		  const user = await UserModel.findByIdAndUpdate(userId, { name }, { new: true });
 		  if (!user) {
@@ -106,26 +107,23 @@ class UserController {
 		}
 	  }
 	
-	  async updateUser2(req, res, next) {
+	  async setAvatar(req, res, next) {
 		try {
-		  const userId = req.params.id
-		  const { ava } = req.body
-		  if (!ava) {
-			return next(ApiError.BadRequest('Ссылка на аватар не может быть пустой'))
-		  }
-		  if (!validator.isURL(ava)) {
-			return next(ApiError.BadRequest('Ссылка на аватар должна быть URL'))
-		  }
-		  const user = await UserModel.findByIdAndUpdate(userId, { ava }, { new: true })
-		  if (!user) {
-			return next(ApiError.NotFound('Пользователь не найден'))
-		  }
-		  res.json({ message: 'Аватар успешно обновлен', user })
-		} catch (error) {
-		  console.error('Error updating user:', error)
-		  next(ApiError.Internal(error.message))
+			const errors = validationResult(req)
+			if (!errors.isEmpty()) {
+				deleteFileOnError(req, res, next)
+				return next(ApiError.BadRequest('Некорректные данные', errors.array()))
+			}
+			const { refreshToken } = req.cookies
+			const avatarPath = req.file ? req.file.path : null
+			if (!avatarPath) throw ApiError.BadRequest('Необходимо загрузить аватарку')
+			
+			const avatar = await userService.setAvatar(refreshToken, avatarPath)
+			return res.json(avatar)
+		} catch (err) {
+			next(err)
 		}
-	  }
+	}
 	
 	  async logout(req, res, next) {
 		try {
