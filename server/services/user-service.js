@@ -18,7 +18,7 @@ class UserService {
     const activationLink = uuidv4()
     const user = await UserModel.create({
 	  name: `user${Math.floor(Math.random() * 900000) + 100000}`,
-	  avatar: 'https://cdn-icons-png.flaticon.com/512/149/149071.png',
+	  avatar: '',
       email,
       password: hashPassword,
       activationLink
@@ -85,7 +85,7 @@ class UserService {
 			if (err) {
 			  ApiError.BadRequest('Ошибка при удалении файла');
 			} else {
-			  console.log('Файл успешно удален')
+			  return;
 			}
 		  });
 		}

@@ -1,18 +1,16 @@
-import { format, parseISO, set } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import styles from './main.module.css'
-import React, { useState, useEffect, useRef } from 'react'
-import { useUserStore } from '../../../store/userStore'
-import axios from 'axios'
-import { useTasksStore } from '../../../store/tasksStore'
-import { Navigate, useNavigate } from'react-router-dom';
-
-
+import styles from './main.module.css';
+import React, { useState, useEffect, useRef } from 'react';
+import { useUserStore } from '../../../store/userStore';
+import { useTasksStore } from '../../../store/tasksStore';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+//шо палиш, это мой код
 function Main() {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [isTaskPanelOpen, setIsTaskPanelOpen] = useState(false);
-  const [user, setUser] = useState({});
   const [task, setTask] = useState('');
   const [selectedTask, setSelectedTask] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -22,185 +20,234 @@ function Main() {
   const [fileName, setFileName] = useState('Выбрать фото');
   const fileInputRef = useRef(null);
   const fileRef = useRef(null);
-//  userStore
-  const email = useUserStore((state) => state.email)
-  const id = useUserStore((state) => state.id)
+  
+  // userStore
+  const email = useUserStore((state) => state.email);
+  const id = useUserStore((state) => state.id);
+  const fetchUser = useUserStore((state) => state.fetchUser);
+  const updateUser = useUserStore((state) => state.updateUser);
+  const logout = useUserStore((state) => state.logout);
+  const setAvatar = useUserStore((state) => state.setAvatar);
+  const user = useUserStore((state) => state.user);
 
-// taskStore
-  const tasks = useTasksStore((state) => state.tasks)
-  const addTaskToStore = useTasksStore((state) => state.addTaskToStore)
-  const updateTaskInStore = useTasksStore((state) => state.updateTaskInStore)
-  const deleteTaskFromStore = useTasksStore((state) => state.deleteTaskFromStore)
-  const getTasks = useTasksStore((state) => state.getTasks)
-
+  // taskStore
+  const tasks = useTasksStore((state) => state.tasks);
+  const fetchTasks = useTasksStore((state) => state.fetchTasks);
+  const addTaskToStore = useTasksStore((state) => state.addTaskToStore);
+  const updateTaskInStore = useTasksStore((state) => state.updateTaskInStore);
+  const deleteTaskFromStore = useTasksStore((state) => state.deleteTaskFromStore);
+  
   function togglePanel() {
     setIsPanelOpen(!isPanelOpen)
   }
+  
   const toggleTaskPanel = () => {
-    setIsTaskPanelOpen(!isTaskPanelOpen);
+    setIsTaskPanelOpen(!isTaskPanelOpen)
   }
+  
   const handleCloseTaskPanel = () => {
-    setSelectedTask(null);
-    setIsEditing(false);
-    toggleTaskPanel();
-  };
+    setSelectedTask(null)
+    setIsEditing(false)
+    toggleTaskPanel()
+  }
+  
   const handleKeyDown = (event) => {
     if (event.key === 'Enter') {
       handleAddTask()
     }
   }
+  
   const handleEditTask = () => {
     setEditedTaskText(selectedTask.text)
     setIsEditing(true)
   };
+  
   const startEditingName = () => {
-    setEditedName(user.name);
-    setIsEditingName(true);
+    setEditedName(user.name)
+    setIsEditingName(true)
   };
+  
   const handleTaskClick = (taskText) => {
     setSelectedTask(taskText)
-  }
-  const [headerText, setHeaderText] = useState('Мой To-Doo-List')
-  const [headerText2, setHeaderText2] = useState('Задача:')
-  const [headerText3, setHeaderText3] = useState('Профиль')
-
+  };
+  
+  const [headerTaskCol, setheaderTaskCol] = useState('');
+  const [headerText, setHeaderText] = useState('Мой To-Doo-List');
+  
+  const [headerTextColor, setHeaderTextColor] = useState('');
+  const [headerText3, setHeaderText3] = useState('Профиль');
+  
   useEffect(() => {
-    async function fetchUserData() {
+    async function fetchUserDataByEmail() {
       try {
-        const response = await axios.get(`http://localhost:3000/api/getUser/${email}`)
-        setUser(response.data);
-        const tasksResponse = await axios.get(`http://localhost:3000/api/tasks/${response.data._id}`)
-        getTasks(tasksResponse.data) 
+        const userData = await fetchUser(email)
+        fetchTasks(userData._id)
       } catch (error) {
-        setHeaderText('Ошибка получения задач')
+        setHeaderText(error.message)
+        console.log(error.message)
       }
     }
-    if (email) {
-      fetchUserData()
-    }
-  }, [email, id, addTaskToStore])
-const handleAddTask = async () => {
-  if (!task) return;
-  try {
-    const response = await axios.post('http://localhost:3000/api/postTask', {
-      userId: user._id,
-      task,
-    });
-    addTaskToStore({
-      ...response.data,
-      text: task,
-      createdAt: response.data.userTask.createdAt,
-      _id: response.data.userTask._id,
-    });
-    setTask('');
-  } catch (error) {
-    console.error('Error adding task:', error);
-    setHeaderText('Ошибка добавления задачи');
 
-  }
-}
+    if (email) {
+      fetchUserDataByEmail()
+    }
+  }, [email, id, fetchTasks, fetchUser])
+  
+  const handleAddTask = async () => {
+    if (!task) return;
+    try {
+      await addTaskToStore(user._id, task)
+      setTask('');
+    } catch (error) {
+      console.error('Error adding task:', error)
+      setheaderTaskCol(styles['task-title-err'])
+      setHeaderText(error.message)
+      setTimeout(() => {
+        setheaderTaskCol('')
+        setHeaderText('Мой To-Doo-List')
+      }, 1000);
+    }
+  };
+  
   const handleDeleteTask = async () => {
     try {
       const taskId = selectedTask._id
-      const response = await axios.delete(`http://localhost:3000/api/deleteTask/${taskId}`)
-      deleteTaskFromStore(selectedTask);
-      setSelectedTask('')
+      await deleteTaskFromStore(taskId)
+      setSelectedTask(null)
     } catch (error) {
-      console.error('Error deleting task:', error)
-      console.log(error)
-      setHeaderText2('Ошибка удаления')
+      setheaderTaskCol(styles['task-title-err'])
+      setHeaderText(error.message)
+      setTimeout(() => {
+        setheaderTaskCol('')
+        setHeaderText('Мой To-Doo-List')
+      }, 1000);
     }
-  }
+  };
+
   const handleSaveTask = async () => {
     if (editedTaskText.trim().length < 1) {
-      return
+      return;
     }
     try {
-      const taskId = selectedTask._id
-      const response = await axios.put(`http://localhost:3000/api/updateTask/${taskId}`, {
-        userId: user._id,
-        text: editedTaskText
-      })
+      await updateTaskInStore(user._id, { ...selectedTask, text: editedTaskText })
       setSelectedTask((prev) => ({ ...prev, text: editedTaskText }))
-      updateTaskInStore({ ...selectedTask, text: editedTaskText })
       setIsEditing(false)
     } catch (error) {
-      console.error('Error updating task:', error)
-      setHeaderText2('Ошибка обновления')
+      setheaderTaskCol(styles['task-title-err'])
+      setHeaderText(error.message)
+      setTimeout(() => {
+        setheaderTaskCol('')
+        setHeaderText('Мой To-Doo-List')
+      }, 1000)
     }
-  }
+  };
+
   const handleSaveName = async () => {
     if (editedName.trim().length < 1) {
-      setHeaderText3('имя короткое')
+      setHeaderTextColor(styles['header-text-err'])
+      setEditedName(user.name)
+      setHeaderText3('Имя короткое')
+      setTimeout(() => {
+        setHeaderTextColor('')
+        setHeaderText3('Профиль')
+      }, 1000)
+    } else {
+      try {
+        await updateUser(user._id, { name: editedName })
+        setIsEditingName(false)
+        setHeaderTextColor(styles['header-text-done'])
+        setHeaderText3('Имя обновлено')
+        setTimeout(() => {
+          setHeaderTextColor('')
+          setHeaderText3('Профиль')
+        }, 1500)
+      } catch (error) {
+        setHeaderTextColor(styles['header-text-err'])
+        setHeaderText3(error.message)
+        setTimeout(() => {
+          setHeaderTextColor('')
+          setHeaderText3('Профиль')
+        }, 1000);
+      }
     }
-    try {
-      const response = await axios.put(`http://localhost:3000/api/updateUser/${user._id}`, {
-        name: editedName
-      });
-      setUser((prev) => ({...prev, name: editedName }))
-      setIsEditingName(false)
-    } catch (error) {
-      console.error(error.response.data.message)
-      setHeaderText3(error.response.data.message)
-      
+  };
 
-    }
-  }
   const handleLogout = async () => {
     try {
-      const response = await axios.get('http://localhost:3000/api/logout', { withCredentials: true })
+      await logout()
       setIsPanelOpen(false)
       navigate('/')
-    } 
-    catch (error) {
-      console.error(error.response.data.message)
-      setHeaderText3(error.response.data.message)
+    } catch (error) {
+      setHeaderTextColor(styles['header-text-err'])
+      setHeaderText3(error.message)
+      setTimeout(() => {
+        setHeaderTextColor('')
+        setHeaderText3('Профиль')
+      }, 1000)
     }
-  }
+  };
+
   const groupTasksByDate = (tasks) => {
     return tasks.reduce((acc, task) => {
       const date = format(parseISO(task.createdAt), 'd MMMM yyyy', { locale: ru })
       if (!acc[date]) {
         acc[date] = []
       }
-      acc[date].push(task)
-      return acc
+      acc[date].unshift(task)
+      return acc;
     }, {})
-  }
-  const groupedTasks = groupTasksByDate(tasks)
-  const { userAvatar, setAvatar } = useUserStore()
-  const [previewAvatar, setPreviewAvatar] = useState(null)
+  };
+
+  const groupedTasks = groupTasksByDate(tasks);
+
+  
+  const [previewAvatar, setPreviewAvatar] = useState(null);
+
   const handleFileInputChange = (e) => {
-    const files = e.target.files
+    const files = e.target.files;
     if (files.length > 0) {
       const file = files[0]
-      if (
-        file.type === 'image/png' ||
-        file.type === 'image/jpeg' ||
-        file.type === 'image/jpg' ||
-        file.type === 'image/gif' ||
-        file.type === 'image/webp'
-      ) {
-        setFileName(file.name)
-        fileInputRef.current = file
-        setPreviewAvatar(URL.createObjectURL(file))
+      try {
+        if (
+          file.type === 'image/jpeg' ||
+          file.type === 'image/jpg' ||
+          file.type === 'image/gif' ||
+          file.type === 'image/webp'
+        ) {
+          setFileName(file.name)
+          fileInputRef.current = file
+          setPreviewAvatar(URL.createObjectURL(file))
+
+          setHeaderTextColor(styles['header-text-done'])
+          setHeaderText3('Аватар обновлен')
+          setTimeout(() => {
+            setHeaderTextColor('')
+            setHeaderText3('Профиль')
+          }, 1500);
+        } else {
+          setHeaderTextColor(styles['header-text-err'])
+          setHeaderText3('Неверный формат')
+          setFileName('')
+          setTimeout(() => {
+            setHeaderTextColor('')
+            setHeaderText3('Профиль')
+          }, 1000);
+        }
+      } catch (error) {
+        console.log('Error uploading avatar:', error)
       }
     }
-  }
+  };
 
   useEffect(() => {
     if (fileInputRef.current) {
       const formData = new FormData()
       formData.append('avatar', fileInputRef.current)
-      setAvatar(formData)
-       
-        .catch((error) => {
-          console.error('Error uploading avatar:', error)
-        })
+      setAvatar(formData).catch((error) => {
+        console.error('Error uploading avatar:', error)
+      });
     }
   }, [fileInputRef.current, setAvatar])
-
-
 
   return (
        <div className={styles['container']}>
@@ -211,7 +258,7 @@ const handleAddTask = async () => {
       </div>
       <div className={styles['panel-content']}>
         <div className={styles['panel-top-cont']}>
-          <h5>{headerText3}</h5>
+          <h5 className={`${styles['header-text']} ${headerTextColor}`}>{headerText3}</h5>
           
           <div className={styles['cont1']}>
           <img src={previewAvatar || `http://localhost:3000/${user.avatar}`} className={styles['ava']} />
@@ -247,7 +294,7 @@ const handleAddTask = async () => {
         {/* внутрянка сайта */}
     <div className={styles['container2']}>
     <div className={styles['tasks']}>
-  <div className={styles['task-title']}>{headerText}</div>
+  <div className={`${styles['task-title']} ${headerTaskCol}`}>{headerText}</div>
   <div className={styles['task-add']}>
     <input
       value={task}

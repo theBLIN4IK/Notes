@@ -90,20 +90,20 @@ class UserController {
 		  const userId = req.params.id;
 		  const { name } = req.body;
 		  if (!name) {
-			return next(ApiError.BadRequest('Имя короткое'));
+			return next(ApiError.BadRequest('Имя короткое'))
 		  }
-		  const existingUser = await UserModel.findOne({ name, _id: { $ne: userId } });
+		  const existingUser = await UserModel.findOne({ name, _id: { $ne: userId } })
 		  if (existingUser) {
-			return next(ApiError.BadRequest('Имя занято'));
+			return next(ApiError.BadRequest('Имя занято'))
 		  }
-		  const user = await UserModel.findByIdAndUpdate(userId, { name }, { new: true });
+		  const user = await UserModel.findByIdAndUpdate(userId, { name }, { new: true })
 		  if (!user) {
-			return next(ApiError.NotFound('Пользователь не найден'));
+			return next(ApiError.NotFound('Пользователь не найден'))
 		  }
-		  res.json({ message: 'Ник успешно обновлен', user });
+		  res.json({ message: 'Ник успешно обновлен', user })
 		} catch (error) {
-		  console.error('Error updating user:', error);
-		  next(ApiError.Internal(error.message));
+		  console.error('Error updating user:', error)
+		  next(ApiError.Internal(error.message))
 		}
 	  }
 	

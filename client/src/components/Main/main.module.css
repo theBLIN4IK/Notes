@@ -125,16 +125,32 @@
     align-items: flex-start;
     justify-content: flex-start;
 }
-h5{
+
+.header-text{
     font-family: "LXGW WenKai Mono TC", monospace;
     font-size: 45px;
     color: rgb(255, 255, 255);
+    transition: all 0.3s ease;
+}
+.header-text-err{
+    font-family: "LXGW WenKai Mono TC", monospace;
+    font-size: 45px;
+    color: rgb(255, 0, 0);
+    transition: all 0.3s ease;
+}
+.header-text-done{
+    font-family: "LXGW WenKai Mono TC", monospace;
+    font-size: 45px;
+    color: rgb(0, 222, 4);
+    transition: all 0.3s ease;
 }
 .ava{
     width: 150px;
     height: 150px;
     border-radius: 50%;
     border: 5px solid white;
+    background-image: url('https://promotions.lenovo.com/web/images/no-image.png');
+    background-size: contain;
 }
 
 
@@ -215,8 +231,6 @@ h5{
 }
 
 
-
-
 .container2{
     width: 100%;
     height: 100%;
@@ -248,7 +262,22 @@ align-items: center;
 font-size: 40px;
 font-weight: bolder;
 font-family: "LXGW WenKai Mono TC", monospace;
+transition: all 0.3s ease;
 }
+.task-title-err{
+    width: 80%;
+    border-bottom: 4px solid black;
+    height: 10%;
+    color: red;
+    background-color: rgba(240, 248, 255, 0);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 40px;
+    font-weight: bolder;
+    font-family: "LXGW WenKai Mono TC", monospace;
+    transition: all 0.3s ease;
+    }
 .task-add{
 width: 100%;
 height: 10%;
@@ -605,7 +634,7 @@ padding: 10px;
     .container2{
         padding: 15px;
     }
-    .task-title{
+    .task-title, .task-title-err{
         font-size: 30px;
     }
     .input, .input-error{
@@ -626,8 +655,12 @@ padding: 10px;
     .panel{
         border-color: black;
     }
+    .header-text, .header-text-err, .header-text-done{
+        font-size: 38px;
+    }
 }
 @media (max-width: 400px) {
+    
     .cont2{
         gap: 5px;
     }
@@ -769,7 +802,7 @@ padding: 10px;
 .task-title2{
     font-size: 35px;
 }
-.task-title{
+.task-title, .task-title-err{
     font-size: 25px;
 }
 .task-add{
