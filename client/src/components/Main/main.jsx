@@ -114,6 +114,12 @@ function Main() {
       const taskId = selectedTask._id
       await deleteTaskFromStore(taskId)
       setSelectedTask(null)
+      setheaderTaskCol(styles['task-title-ok'])
+      setHeaderText('Задача удалена')
+      setTimeout(() => {
+        setheaderTaskCol('')
+        setHeaderText('Мой To-Doo-List')
+      }, 1000);
     } catch (error) {
       setheaderTaskCol(styles['task-title-err'])
       setHeaderText(error.message)
@@ -132,6 +138,12 @@ function Main() {
       await updateTaskInStore(user._id, { ...selectedTask, text: editedTaskText })
       setSelectedTask((prev) => ({ ...prev, text: editedTaskText }))
       setIsEditing(false)
+      setheaderTaskCol(styles['task-title-ok'])
+      setHeaderText('Задача изменена')
+      setTimeout(() => {
+        setheaderTaskCol('')
+        setHeaderText('Мой To-Doo-List')
+      }, 1000);
     } catch (error) {
       setheaderTaskCol(styles['task-title-err'])
       setHeaderText(error.message)

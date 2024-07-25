@@ -278,6 +278,20 @@ transition: all 0.3s ease;
     font-family: "LXGW WenKai Mono TC", monospace;
     transition: all 0.3s ease;
     }
+    .task-title-ok{
+        width: 80%;
+        border-bottom: 4px solid black;
+        height: 10%;
+        color: yellow;
+        background-color: rgba(240, 248, 255, 0);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 40px;
+        font-weight: bolder;
+        font-family: "LXGW WenKai Mono TC", monospace;
+        transition: all 0.3s ease;
+        }
 .task-add{
 width: 100%;
 height: 10%;
@@ -634,7 +648,7 @@ padding: 10px;
     .container2{
         padding: 15px;
     }
-    .task-title, .task-title-err{
+    .task-title, .task-title-err, .task-title-ok{
         font-size: 30px;
     }
     .input, .input-error{
@@ -802,7 +816,7 @@ padding: 10px;
 .task-title2{
     font-size: 35px;
 }
-.task-title, .task-title-err{
+.task-title, .task-title-err, .task-title-ok{
     font-size: 25px;
 }
 .task-add{
